@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ST-GraphEMS Forecasting</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+    <link rel="stylesheet" href="ems.css">
+</head>
+<body>
+    <div class="dashboard">
+        <header class="dashboard-header">
+            <h1>ST-GraphEMS Forecasting</h1>
+        </header>
+
+        <aside class="panel sidebar">
+            <section class="card user-inputs">
+                <h2>User Inputs</h2>
+                <div class="field">
+                    <label for="zipSelect">ZIP code zone</label>
+                    <select id="zipSelect">
+                        <option value="all">ZIP: all</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="eventFlag">Special event flag</label>
+                    <select id="eventFlag">
+                        <option value="none">None</option>
+                        <option value="parade">Parade</option>
+                        <option value="concert">Concert</option>
+                        <option value="sports">Sports Event</option>
+                        <option value="holiday">Holiday</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="startDate">Date range</label>
+                    <div class="date-range">
+                        <input type="date" id="startDate">
+                        <span class="date-sep">to</span>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                <button id="runForecast" class="run-btn" disabled>Run Forecast</button>
+            </section>
+
+            <section class="card model-performance">
+                <h2>Model Performance</h2>
+                <p class="perf-scope" id="perfScope">Test set — all ZIP zones</p>
+                <dl class="metrics">
+                    <div class="metric">
+                        <dt>MAE</dt>
+                        <dd id="metricMae">—</dd>
+                    </div>
+                    <div class="metric">
+                        <dt>RMSE</dt>
+                        <dd id="metricRmse">—</dd>
+                    </div>
+                    <div class="metric">
+                        <dt>MAPE</dt>
+                        <dd id="metricMape">—</dd>
+                    </div>
+                    <div class="metric">
+                        <dt>R²</dt>
+                        <dd id="metricR2">—</dd>
+                    </div>
+                </dl>
+            </section>
+        </aside>
+
+        <main class="panel prediction-card" id="predictionCard">
+            <div class="prediction-main">
+                <p class="card-label">Next-Hour Demand Prediction</p>
+                <h2 class="prediction-zip" id="predictionZip">ZIP —</h2>
+                <div class="prediction-value-wrap">
+                    <span class="prediction-value" id="predictionValue">—</span>
+                    <span class="prediction-unit">Predicted calls (<span id="predictionHour">—</span>)</span>
+                </div>
+                <div class="alert-box hidden" id="demandAlert"></div>
+                <p class="confidence" id="confidenceInterval">95% CI: —</p>
+            </div>
+            <div class="zone-context">
+                <h3>Zone Context</h3>
+                <dl>
+                    <div><dt>Population</dt><dd id="ctxPopulation">—</dd></div>
+                    <div><dt>Risk Tier</dt><dd id="ctxRiskTier" class="risk-badge">—</dd></div>
+                    <div><dt>Neighboring ZIPs</dt><dd id="ctxNeighbors">—</dd></div>
+                    <div><dt>Last 24-hr avg</dt><dd id="ctxRollingAvg">—</dd></div>
+                    <div><dt>Temporal Context</dt><dd id="ctxTemporal">—</dd></div>
+                    <div><dt>Weather</dt><dd id="ctxWeather">—</dd></div>
+                </dl>
+            </div>
+        </main>
+
+        <section class="panel analysis-panel">
+            <div class="analysis-tabs">
+                <button class="analysis-tab active" data-tab="temporal">Temporal Pattern Analysis</button>
+                <button class="analysis-tab" data-tab="spatial">Spatial Pattern Analysis</button>
+                <button class="analysis-tab" data-tab="spatiotemporal">Spatiotemporal Pattern Analysis</button>
+            </div>
+            <div class="analysis-content">
+                <div class="analysis-pane active" id="pane-temporal">
+                    <p>Hour-of-day and day-of-week demand patterns for the selected zone. Full analysis view coming soon.</p>
+                </div>
+                <div class="analysis-pane" id="pane-spatial">
+                    <p>Spatial autocorrelation and hotspot clustering across NYC ZIP zones. Full analysis view coming soon.</p>
+                </div>
+                <div class="analysis-pane" id="pane-spatiotemporal">
+                    <p>Combined spatial and temporal pattern decomposition. Full analysis view coming soon.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel map-panel">
+            <div class="panel-header">
+                <h2>NYC ZIP Demand Map</h2>
+                <span class="map-badge" id="mapBadge">ZIP: all</span>
+            </div>
+            <div id="emsMap"></div>
+            <div class="map-legend" id="mapLegend">
+                <span class="legend-low">Low</span>
+                <div class="legend-gradient"></div>
+                <span class="legend-high">High</span>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <div class="panel-header">
+                <h2>All ZIP Zones — Current Hour Forecast</h2>
+            </div>
+            <div class="table-wrap">
+                <table id="zipTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="zip">ZIP</th>
+                            <th data-sort="neighborhood">Neighborhood</th>
+                            <th data-sort="predicted">Predicted</th>
+                            <th data-sort="delta">vs avg</th>
+                            <th>Demand bar</th>
+                            <th data-sort="status">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="zipTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel chart-panel">
+            <div class="panel-header">
+                <h2>Call Demand — Last 24 Hrs + Forecast</h2>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="demandChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">Loading EMS data...</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wicket/wicket.js"></script>
+    <script src="ems.js"></script>
+</body>
+</html>
