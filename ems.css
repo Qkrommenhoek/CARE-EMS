@@ -27,20 +27,19 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg-page);
     color: var(--text-primary);
-    min-height: 100vh;
+    min-height: auto;
 }
 
 .dashboard {
     display: grid;
-    grid-template-columns: 260px 1fr 1fr 320px;
-    grid-template-rows: auto 1fr 1fr;
+    grid-template-columns: 300px 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
     grid-template-areas:
         "header header header header"
-        "sidebar prediction analysis analysis"
+        "sidebar prediction prediction prediction"
         "sidebar map table chart";
     gap: 12px;
     padding: 12px;
-    min-height: 100vh;
 }
 
 .dashboard-header {
@@ -49,6 +48,11 @@ body {
     border-radius: var(--radius);
     padding: 12px 20px;
     box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .dashboard-header h1 {
@@ -58,6 +62,18 @@ body {
     letter-spacing: -0.02em;
 }
 
+.nyc-status {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.nyc-status.high { background: #fef2f2; color: var(--high); }
+.nyc-status.med  { background: #fff7ed; color: var(--med); }
+.nyc-status.nor  { background: #ecfdf5; color: var(--nor); }
+
 .sidebar {
     grid-area: sidebar;
     display: flex;
@@ -66,6 +82,13 @@ body {
     background: transparent;
     padding: 0;
     box-shadow: none;
+    min-height: 0;
+}
+
+.panel.sidebar {
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
 }
 
 .panel {
@@ -80,6 +103,13 @@ body {
     color: var(--text-light);
     padding: 16px;
     border-radius: var(--radius);
+    flex-shrink: 0;
+}
+
+.sidebar .card.analysis-panel {
+    flex: none;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar .card h2 {
@@ -119,6 +149,40 @@ body {
     gap: 6px;
 }
 
+.datetime-window {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.datetime-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.datetime-row input[type="date"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.datetime-row select {
+    width: 72px;
+    padding: 8px 6px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #1e293b;
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+.window-summary {
+    margin: 6px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .date-range input {
     flex: 1;
     min-width: 0;
@@ -152,43 +216,31 @@ body {
     cursor: not-allowed;
 }
 
-.perf-scope {
-    margin: 0 0 12px;
-    font-size: 0.78rem;
-    color: #94a3b8;
-}
-
-.metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 0;
-}
-
-.metric {
-    background: var(--bg-sidebar-card);
-    border-radius: 8px;
-    padding: 10px;
-}
-
-.metric dt {
-    font-size: 0.72rem;
-    color: #94a3b8;
-    margin: 0 0 4px;
-}
-
-.metric dd {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-}
 
 .prediction-card {
     grid-area: prediction;
+    padding: 20px 24px;
+    container-type: inline-size;
+    container-name: prediction;
+}
+
+.prediction-main {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    padding: 20px;
+    grid-template-columns: minmax(200px, 1fr) minmax(280px, 1.4fr);
+    gap: 24px 32px;
+    align-items: start;
+}
+
+.prediction-headline {
+    min-width: 0;
+}
+
+.prediction-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0 0 24px;
+    border-left: 1px solid var(--border);
 }
 
 .card-label {
@@ -234,17 +286,67 @@ body {
     display: none;
 }
 
-.confidence {
-    margin: 10px 0 0;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+/* Section 5: forecast action rows */
+.forecast-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.875rem;
+    margin-top: 8px;
 }
 
+.forecast-label {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-right: 12px;
+}
+
+.forecast-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+.forecast-value.status-high { color: var(--high); }
+.forecast-value.status-med  { color: var(--med); }
+.forecast-value.status-nor  { color: var(--nor); }
+
+/* Compact forecast card when the prediction panel is narrow */
+@container prediction (max-width: 720px) {
+    .prediction-main {
+        grid-template-columns: 1fr;
+    }
+
+    .prediction-value {
+        font-size: 2.75rem;
+    }
+
+    .prediction-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 20px;
+        padding: 12px 0 0;
+        margin-top: 4px;
+        border-left: none;
+    }
+
+    .forecast-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        margin-top: 0;
+    }
+
+    .forecast-value {
+        text-align: left;
+    }
+}
+
+.zone-context h2,
 .zone-context h3 {
     margin: 0 0 10px;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -252,19 +354,24 @@ body {
 .zone-context dl {
     margin: 0;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .zone-context dl > div {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 8px;
-    font-size: 0.85rem;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    font-size: 0.82rem;
+}
+
+.sidebar .zone-context dl > div {
+    grid-template-columns: 1fr;
 }
 
 .zone-context dt {
-    color: var(--text-muted);
+    color: #94a3b8;
     margin: 0;
+    font-size: 0.72rem;
 }
 
 .zone-context dd {
@@ -287,34 +394,35 @@ body {
 .risk-badge.low { background: #f1f5f9; color: var(--low); }
 
 .analysis-panel {
-    grid-area: analysis;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+    overflow: hidden;
 }
 
 .analysis-tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 8px;
 }
 
 .analysis-tab {
-    padding: 8px 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: white;
-    color: var(--text-primary);
-    font-size: 0.8rem;
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    background: #1e293b;
+    color: var(--text-light);
+    font-size: 0.72rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
+    text-align: center;
 }
 
 .analysis-tab:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: #93c5fd;
 }
 
 .analysis-tab.active {
@@ -324,12 +432,18 @@ body {
 }
 
 .analysis-content {
-    flex: 1;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 16px;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+    flex: none;
+    background: #1e293b;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    overflow: auto;
+}
+
+.analysis-content p {
+    margin: 0;
+    line-height: 1.45;
 }
 
 .analysis-pane {
@@ -384,18 +498,37 @@ body {
 }
 
 #emsMap {
-    flex: 1;
-    min-height: 220px;
+    height: 280px;
+    flex: none;
 }
 
 .map-legend {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 16px;
     padding: 8px 16px;
     font-size: 0.72rem;
     color: var(--text-muted);
 }
+
+.legend-swatch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-swatch::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+
+.legend-swatch.nor::before { background: var(--nor); }
+.legend-swatch.med::before { background: var(--med); }
+.legend-swatch.high::before { background: var(--high); }
 
 .legend-gradient {
     flex: 1;
@@ -406,9 +539,9 @@ body {
 }
 
 .table-wrap {
-    flex: 1;
+    flex: none;
+    height: 320px;
     overflow: auto;
-    max-height: 320px;
 }
 
 #zipTable {
@@ -486,11 +619,62 @@ body {
 .status-badge.nor { background: #ecfdf5; color: var(--nor); }
 .status-badge.low { background: #f1f5f9; color: var(--low); }
 
+/* Section 10a: chart interpretation text */
+.chart-interpretation {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .chart-wrap {
-    flex: 1;
+    flex: none;
+    height: 280px;
     padding: 12px 16px 16px;
-    min-height: 220px;
     position: relative;
+}
+
+.demand-chart {
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+}
+
+.demand-chart svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.demand-chart-legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.demand-chart-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.demand-chart-legend .legend-swatch-line {
+    display: inline-block;
+    width: 18px;
+    height: 3px;
+    background: #16a34a;
+    border-radius: 1px;
+}
+
+.demand-chart-legend .legend-swatch-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: #f97316;
+    border-radius: 50%;
 }
 
 .loading-overlay {
@@ -524,12 +708,149 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* ── Analysis overlay / modal ────────────────────────────────────────── */
+
+.analysis-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.analysis-overlay.hidden { display: none; }
+
+.analysis-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 920px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.analysis-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.analysis-modal-tabs { display: flex; gap: 8px; }
+
+.analysis-modal-tab {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #64748b;
+    transition: all 0.15s;
+}
+
+.analysis-modal-tab.active { background: #1e3a5f; color: #fff; }
+
+.analysis-modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.analysis-modal-close:hover { background: #e2e8f0; }
+
+.analysis-modal-body {
+    overflow-y: auto;
+    padding: 24px;
+    flex: 1;
+}
+
+.analysis-modal-pane { display: none; }
+.analysis-modal-pane.active { display: block; }
+
+/* ── D3 chart sections ───────────────────────────────────────────────── */
+
+.d3-chart-section { margin-bottom: 40px; }
+
+.d3-chart-section h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 16px 0;
+}
+
+.d3-chart-section svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* ── ZIP selector (chart 7) ──────────────────────────────────────────── */
+
+.zip-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.zip-selector-btn {
+    padding: 4px 10px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 20px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.12s;
+}
+
+.zip-selector-btn:hover { border-color: #1e3a5f; color: #1e3a5f; }
+.zip-selector-btn.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+
+/* ── D3 tooltip ──────────────────────────────────────────────────────── */
+
+.d3-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.5;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 2000;
+}
+
 @media (max-width: 1400px) {
     .dashboard {
-        grid-template-columns: 240px 1fr 1fr;
+        grid-template-columns: 280px 1fr 1fr;
         grid-template-areas:
             "header header header"
-            "sidebar prediction analysis"
+            "sidebar prediction prediction"
             "sidebar map map"
             "sidebar table chart";
     }
@@ -542,13 +863,40 @@ body {
             "header"
             "sidebar"
             "prediction"
-            "analysis"
             "map"
             "table"
             "chart";
     }
 
-    .prediction-card {
+    .prediction-main {
         grid-template-columns: 1fr;
+    }
+
+    .prediction-value {
+        font-size: 2.75rem;
+    }
+
+    .prediction-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 20px;
+        padding: 12px 0 0;
+        margin-top: 4px;
+        border-left: none;
+    }
+
+    .forecast-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        margin-top: 0;
+    }
+
+    .forecast-value {
+        text-align: left;
+    }
+
+    .sidebar .card.analysis-panel {
+        flex: none;
     }
 }
