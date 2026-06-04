@@ -23,7 +23,7 @@ export function hideLoading() {
 
 export function populateZipSelect() {
     const select = document.getElementById('zipSelect');
-    select.innerHTML = '<option value="all">ZIP: all</option>';
+    select.innerHTML = '';
     state.zipList.forEach(zip => {
         const opt = document.createElement('option');
         opt.value = zip;
@@ -33,48 +33,37 @@ export function populateZipSelect() {
 }
 
 export function populateHourSelects() {
-    ['startHour', 'endHour'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        sel.innerHTML = '';
-        for (let h = 0; h < 24; h++) {
-            const hh = String(h).padStart(2, '0');
-            const opt = document.createElement('option');
-            opt.value = hh;
-            opt.textContent = `${hh}:00`;
-            sel.appendChild(opt);
-        }
-    });
+    const sel = document.getElementById('forecastHour');
+    if (!sel) return;
+    sel.innerHTML = '';
+    for (let h = 0; h < 24; h++) {
+        const hh = String(h).padStart(2, '0');
+        const opt = document.createElement('option');
+        opt.value = hh;
+        opt.textContent = `${hh}:00`;
+        sel.appendChild(opt);
+    }
 }
 
 export function setDefaultDateRange() {
     const firstTs = parseTimestamp(state.timestamps[0]);
     const lastTs = parseTimestamp(state.timestamps[state.timestamps.length - 1]);
 
-    const endDate = new Date(lastTs);
-    const startDate = new Date(endDate);
-    startDate.setHours(startDate.getHours() - 23);
-
-    if (startDate < firstTs) startDate.setTime(firstTs.getTime());
-
-    document.getElementById('startDate').min = dateToInputValue(firstTs);
-    document.getElementById('startDate').max = dateToInputValue(lastTs);
-    document.getElementById('endDate').min = dateToInputValue(firstTs);
-    document.getElementById('endDate').max = dateToInputValue(lastTs);
-    document.getElementById('startDate').value = dateToInputValue(startDate);
-    document.getElementById('endDate').value = dateToInputValue(endDate);
-    document.getElementById('startHour').value = hourToOption(startDate);
-    document.getElementById('endHour').value = hourToOption(endDate);
+    document.getElementById('forecastDate').min = dateToInputValue(firstTs);
+    document.getElementById('forecastDate').max = dateToInputValue(lastTs);
+    document.getElementById('forecastDate').value = dateToInputValue(lastTs);
+    document.getElementById('forecastHour').value = hourToOption(lastTs);
 }
 
 export function resolveActiveIndices() {
-    const startVal = document.getElementById('startDate').value;
-    const endVal = document.getElementById('endDate').value;
-    const startHourVal = document.getElementById('startHour').value;
-    const endHourVal = document.getElementById('endHour').value;
-    const startDate = inputValuesToDate(startVal, startHourVal);
+    const endVal = document.getElementById('forecastDate').value;
+    const endHourVal = document.getElementById('forecastHour').value;
     const endDate = inputValuesToDate(endVal, endHourVal);
     endDate.setMinutes(59, 59, 999);
+
+    const startDate = new Date(endDate);
+    startDate.setHours(startDate.getHours() - 24);
+    startDate.setMinutes(0, 0, 0);
 
     state.activeIndices = state.timestamps
         .map((ts, idx) => ({ ts, idx }))
@@ -87,13 +76,3 @@ export function resolveActiveIndices() {
     state.forecastIndex = state.activeIndices.length - 1;
 }
 
-export function getFocusZip() {
-    if (state.selectedZip !== 'all') return state.selectedZip;
-
-    const idx = state.activeIndices[state.forecastIndex];
-    if (idx === undefined) return state.zipList[0];
-
-    return state.zipList.reduce((best, zip) =>
-        state.predictions[zip][idx] > state.predictions[best][idx] ? zip : best
-    , state.zipList[0]);
-}

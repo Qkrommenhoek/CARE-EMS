@@ -23,20 +23,14 @@
                 <div class="field">
                     <label for="zipSelect">ZIP code zone</label>
                     <select id="zipSelect">
-                        <option value="all">ZIP: all</option>
                     </select>
                 </div>
                 <div class="field">
-                    <label>Forecast window</label>
+                    <label>Forecast date</label>
                     <div class="datetime-window">
                         <div class="datetime-row">
-                            <input type="date" id="startDate" aria-label="Start date">
-                            <select id="startHour" aria-label="Start hour"></select>
-                        </div>
-                        <span class="date-sep">to</span>
-                        <div class="datetime-row">
-                            <input type="date" id="endDate" aria-label="End date">
-                            <select id="endHour" aria-label="End hour"></select>
+                            <input type="date" id="forecastDate" aria-label="Forecast date">
+                            <select id="forecastHour" aria-label="Forecast hour"></select>
                         </div>
                     </div>
                     <p class="window-summary" id="windowSummary">Forecast for &mdash;</p>
@@ -106,7 +100,7 @@
         <section class="panel map-panel">
             <div class="panel-header">
                 <h2>NYC ZIP Demand Map</h2>
-                <span class="map-badge" id="mapBadge">ZIP: all</span>
+                <span class="map-badge" id="mapBadge">ZIP: —</span>
             </div>
             <div id="emsMap"></div>
             <div class="map-legend" id="mapLegend">

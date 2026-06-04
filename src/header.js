@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 import { classifyDemand } from './classify.js';
-import { statusLabel, statusClass } from './utils.js';
+import { statusLabel, statusClass, formatForecastWindow } from './utils.js';
 
 export function computeCitywideStatus(forecastIndex) {
     const idx = state.activeIndices[forecastIndex];
@@ -26,8 +26,8 @@ export function computeCitywideStatus(forecastIndex) {
     else if (modCount > 0) overall = 'MED';
     else overall = 'NOR';
 
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const ts = state.timestamps[idx];
+    const timeStr = formatForecastWindow(ts);
 
     return { overall, elevated, timeStr };
 }

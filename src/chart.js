@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 import { classifyDemand, rollingStats } from './classify.js';
-import { mean } from './utils.js';
+import { mean, parseTimestamp } from './utils.js';
 
 const OBSERVED_COLOR = '#16a34a';
 const FORECAST_COLOR = '#f97316';
@@ -63,13 +63,12 @@ function yLabel(g, iH, text) {
         .text(text);
 }
 
-function xTickFormat(label, index, labels) {
+function xTickFormat(label) {
     if (label === 'fcst') return 'fcst';
-    const match = label.match(/^-(\d+)h$/);
+    const match = label.match(/^(\d{2}):00$/);
     if (!match) return label;
-    const hours = parseInt(match[1], 10);
-    if (hours % 4 === 0) return label;
-    return '';
+    const hour = parseInt(match[1], 10);
+    return hour % 4 === 0 ? label : '';
 }
 
 function ensureResizeObserver() {
@@ -162,7 +161,7 @@ function renderDemandChart(container, labels, observed, forecast) {
         .attr('class', 'obs-dot')
         .attr('cx', d => x(d.label))
         .attr('cy', d => y(d.observed))
-        .attr('r', 2)
+        .attr('r', d => (d.label === '-1h' ? 4 : 2))
         .attr('fill', OBSERVED_COLOR);
 
     g.selectAll('.obs-hit')
@@ -196,8 +195,7 @@ function renderDemandChart(container, labels, observed, forecast) {
 
     if (labels.length >= 2) {
         const lastObs = labels[labels.length - 2];
-        const fcst = labels[labels.length - 1];
-        const sepX = (x(lastObs) + x(fcst)) / 2;
+        const sepX = x(lastObs);
         g.append('line')
             .attr('x1', sepX)
             .attr('x2', sepX)
@@ -226,11 +224,19 @@ export function updateChart() {
     const observed = [];
     const forecast = [];
 
-    const historyStart = Math.max(0, endRel - 23);
+    const historyStart = Math.max(0, endRel - 24);
     for (let r = historyStart; r <= endRel; r++) {
         const dataIdx = state.activeIndices[r];
-        labels.push(r === endRel ? 'fcst' : `-${endRel - r}h`);
-        observed.push(state.groundTruths[zip][dataIdx]);
+        if (r === endRel) {
+            labels.push('fcst');
+            observed.push(null);
+        } else {
+            const ts = state.timestamps[dataIdx];
+            const d = parseTimestamp(ts);
+            const hourLabel = d ? String(d.getHours()).padStart(2, '0') + ':00' : `${r}`;
+            labels.push(hourLabel);
+            observed.push(state.groundTruths[zip][dataIdx]);
+        }
         forecast.push(null);
     }
 

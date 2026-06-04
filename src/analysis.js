@@ -8,9 +8,10 @@
  *                         styleAxis, gridLines, yLabel, hourLabel,
  *                         activeTimestamps, zipMeanCallsInWindow, showEmptyChart
  *  4. Temporal charts  — renderTemporalCharts, renderHourOfDay,
- *                         renderWeekdayWeekend, renderDayOfWeek
- *  5. Spatial charts   — renderSpatialCharts, renderMonthlyTrend,
- *                         renderZipRanking, renderPopulationBubble,
+ *                         renderWeekdayWeekend, renderDayOfWeek,
+ *                         renderMonthlyTrend
+ *  5. Spatial charts   — renderSpatialCharts, renderZipRanking,
+ *                         renderPopulationBubble,
  *                         renderNeighborComparison, drawNeighborBars
  */
 
@@ -25,7 +26,7 @@ const FILL_BLUE  = 'rgba(30, 58, 95, 0.13)';
 const OBSERVED_GREEN = '#16a34a';
 const FILL_GREEN = 'rgba(22, 163, 74, 0.13)';
 
-const M = { top: 24, right: 24, bottom: 44, left: 58 }; // margins
+const M = { top: 46, right: 24, bottom: 44, left: 58 }; // margins
 const W = 820; // SVG width (fits 920px modal minus padding)
 
 // ── Overlay state ─────────────────────────────────────────────────────────────
@@ -192,7 +193,7 @@ function cityMeanForSeries(series, i) {
 
 function legendBarPredActual(g, iW, xOffset = null) {
     const x = xOffset ?? iW - 140;
-    const leg = g.append('g').attr('transform', `translate(${x}, 4)`);
+    const leg = g.append('g').attr('transform', `translate(${x}, -38)`);
     leg.append('rect').attr('width', 12).attr('height', 12).attr('fill', DARK_BLUE).attr('rx', 2);
     leg.append('text').attr('x', 18).attr('y', 10).attr('font-size', '11').attr('fill', '#475569').text('Predicted');
     leg.append('rect').attr('y', 18).attr('width', 12).attr('height', 12).attr('fill', OBSERVED_GREEN).attr('rx', 2);
@@ -201,7 +202,7 @@ function legendBarPredActual(g, iW, xOffset = null) {
 
 function legendLinePredActual(g, iW, xOffset = null) {
     const x = xOffset ?? iW - 150;
-    const leg = g.append('g').attr('transform', `translate(${x}, 4)`);
+    const leg = g.append('g').attr('transform', `translate(${x}, -38)`);
     leg.append('line').attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', DARK_BLUE).attr('stroke-width', 2);
     leg.append('text').attr('x', 26).attr('y', 12).attr('font-size', '11').attr('fill', '#475569').text('Predicted');
     leg.append('line').attr('x2', 20).attr('y1', 26).attr('y2', 26)
@@ -210,7 +211,7 @@ function legendLinePredActual(g, iW, xOffset = null) {
 }
 
 function legendBubblePredActual(g, iW) {
-    const leg = g.append('g').attr('transform', `translate(${iW - 140}, 4)`);
+    const leg = g.append('g').attr('transform', `translate(${iW - 140}, -38)`);
     leg.append('circle').attr('cx', 6).attr('cy', 6).attr('r', 5)
         .attr('fill', 'rgba(30, 58, 95, 0.42)').attr('stroke', DARK_BLUE);
     leg.append('text').attr('x', 18).attr('y', 10).attr('font-size', '11').attr('fill', '#475569').text('Predicted');
@@ -243,6 +244,7 @@ function renderTemporalCharts() {
     renderHourOfDay(pane);
     renderWeekdayWeekend(pane);
     renderDayOfWeek(pane);
+    renderMonthlyTrend(pane);
 }
 
 // Chart 1 — EMS call volume by hour of day
@@ -267,7 +269,7 @@ function renderHourOfDay(container) {
         gt: gtBuckets[hour].length ? mean(gtBuckets[hour]) : 0
     }));
 
-    const H = 230, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 252, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const x = d3.scalePoint().domain(d3.range(24)).range([0, iW]).padding(0.5);
     const yMax = d3.max(data, d => Math.max(d.value, d.gt)) || 1;
     const y = d3.scaleLinear().domain([0, yMax * 1.15]).range([iH, 0]).nice();
@@ -335,7 +337,7 @@ function renderWeekdayWeekend(container) {
     const wdGTData = wdGTBuckets.map((b, h) => ({ hour: h, value: b.length ? mean(b) : 0 }));
     const weGTData = weGTBuckets.map((b, h) => ({ hour: h, value: b.length ? mean(b) : 0 }));
 
-    const H = 230, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 252, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const allVals = [...wdData, ...weData, ...wdGTData, ...weGTData].map(d => d.value);
     const x = d3.scalePoint().domain(d3.range(24)).range([0, iW]).padding(0.5);
     const y = d3.scaleLinear().domain([0, (d3.max(allVals) || 1) * 1.15]).range([iH, 0]).nice();
@@ -387,17 +389,19 @@ function renderWeekdayWeekend(container) {
     g.append('g').call(d3.axisLeft(y).ticks(5)).call(styleAxis);
     yLabel(g, iH, 'avg calls');
 
-    const leg = g.append('g').attr('transform', `translate(${iW - 155}, 4)`);
-    leg.append('line').attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', DARK_BLUE).attr('stroke-width', 2);
-    leg.append('text').attr('x', 26).attr('y', 12).attr('font-size', '11').attr('fill', '#475569').text('Weekday (pred)');
-    leg.append('line').attr('x2', 20).attr('y1', 24).attr('y2', 24)
+    const leg = g.append('g').attr('transform', `translate(${iW - 270}, -38)`);
+    const col1 = leg.append('g');
+    col1.append('line').attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', DARK_BLUE).attr('stroke-width', 2);
+    col1.append('text').attr('x', 26).attr('y', 12).attr('font-size', '11').attr('fill', '#475569').text('Weekday (pred)');
+    col1.append('line').attr('x2', 20).attr('y1', 24).attr('y2', 24)
         .attr('stroke', LIGHT_BLUE).attr('stroke-width', 2).attr('stroke-dasharray', '6,4');
-    leg.append('text').attr('x', 26).attr('y', 28).attr('font-size', '11').attr('fill', '#475569').text('Weekend (pred)');
-    leg.append('line').attr('x2', 20).attr('y1', 40).attr('y2', 40).attr('stroke', OBSERVED_GREEN).attr('stroke-width', 2);
-    leg.append('text').attr('x', 26).attr('y', 44).attr('font-size', '11').attr('fill', '#475569').text('Weekday (actual)');
-    leg.append('line').attr('x2', 20).attr('y1', 56).attr('y2', 56)
+    col1.append('text').attr('x', 26).attr('y', 28).attr('font-size', '11').attr('fill', '#475569').text('Weekend (pred)');
+    const col2 = leg.append('g').attr('transform', 'translate(110, 0)');
+    col2.append('line').attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', OBSERVED_GREEN).attr('stroke-width', 2);
+    col2.append('text').attr('x', 26).attr('y', 12).attr('font-size', '11').attr('fill', '#475569').text('Weekday (actual)');
+    col2.append('line').attr('x2', 20).attr('y1', 24).attr('y2', 24)
         .attr('stroke', OBSERVED_GREEN).attr('stroke-width', 2).attr('stroke-dasharray', '6,4');
-    leg.append('text').attr('x', 26).attr('y', 60).attr('font-size', '11').attr('fill', '#475569').text('Weekend (actual)');
+    col2.append('text').attr('x', 26).attr('y', 28).attr('font-size', '11').attr('fill', '#475569').text('Weekend (actual)');
 }
 
 // Chart 3 — EMS call volume by day of week
@@ -432,7 +436,7 @@ function renderDayOfWeek(container) {
         return;
     }
 
-    const H = 230, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 252, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const x0 = d3.scaleBand().domain(DAYS).range([0, iW]).padding(0.3);
     const x1 = d3.scaleBand().domain(SERIES).range([0, x0.bandwidth()]).padding(0.15);
     const yMax = d3.max(data, d => Math.max(d.value, d.gt)) || 1;
@@ -467,17 +471,6 @@ function renderDayOfWeek(container) {
     g.append('g').call(d3.axisLeft(y).ticks(5)).call(styleAxis);
     yLabel(g, iH, 'avg daily calls');
     legendBarPredActual(g, iW);
-}
-
-// ── 5. Spatial charts ─────────────────────────────────────────────────────────
-
-function renderSpatialCharts() {
-    const pane = document.getElementById('modal-pane-spatial');
-    pane.innerHTML = '';
-    renderMonthlyTrend(pane);
-    renderZipRanking(pane);
-    renderPopulationBubble(pane);
-    renderNeighborComparison(pane);
 }
 
 // Chart 4 — Monthly call volume trend
@@ -521,7 +514,7 @@ function renderMonthlyTrend(container) {
         return;
     }
 
-    const H = 230, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 252, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const x = d3.scalePoint().domain(MONTHS).range([0, iW]).padding(0.5);
     const yMax = d3.max(data, d => Math.max(d.value, d.gt)) || 1;
     const y = d3.scaleLinear().domain([0, yMax * 1.15]).range([iH, 0]).nice();
@@ -557,6 +550,16 @@ function renderMonthlyTrend(container) {
     g.append('g').call(d3.axisLeft(y).ticks(5)).call(styleAxis);
     yLabel(g, iH, 'avg calls/day');
     legendLinePredActual(g, iW);
+}
+
+// ── 5. Spatial charts ─────────────────────────────────────────────────────────
+
+function renderSpatialCharts() {
+    const pane = document.getElementById('modal-pane-spatial');
+    pane.innerHTML = '';
+    renderZipRanking(pane);
+    renderPopulationBubble(pane);
+    renderNeighborComparison(pane);
 }
 
 // Chart 5 — EMS demand ranked by ZIP (horizontal bar)
@@ -629,7 +632,7 @@ function renderPopulationBubble(container) {
         return { zip, pop, avgCalls, avgGT, sens };
     }).filter(d => d.pop > 0);
 
-    const H = 280, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 302, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const x = d3.scaleLinear().domain([0, (d3.max(bubbles, d => d.pop / 1000) || 1) * 1.15]).range([0, iW]).nice();
     const yMax = d3.max(bubbles, d => Math.max(d.avgCalls, d.avgGT)) || 1;
     const y = d3.scaleLinear().domain([0, yMax * 1.15]).range([iH, 0]).nice();
@@ -719,7 +722,7 @@ function drawNeighborBars(container, focalZip) {
         focal: zip === focalZip
     }));
 
-    const H = 220, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
+    const H = 242, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
     const x0 = d3.scaleBand().domain(data.map(d => d.zip)).range([0, iW]).padding(0.3);
     const x1 = d3.scaleBand().domain(SERIES).range([0, x0.bandwidth()]).padding(0.15);
     const yMax = d3.max(data, d => Math.max(d.value, d.gt)) || 1;

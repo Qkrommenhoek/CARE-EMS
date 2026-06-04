@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 import { loadAllData } from './data.js';
-import { resolveActiveIndices, getFocusZip } from './controls.js';
+import { resolveActiveIndices } from './controls.js';
 import { updateCitywideStatus } from './header.js';
 import { updatePredictionCard } from './prediction.js';
 import { initMap, updateMap } from './map.js';
@@ -26,23 +26,20 @@ function selectZip(zip) {
 // --- Main render ---
 
 function updateWindowSummary() {
-    const startIdx = state.activeIndices[0];
     const endIdx = state.activeIndices[state.forecastIndex];
     const el = document.getElementById('windowSummary');
-    if (!el || startIdx === undefined || endIdx === undefined) return;
+    if (!el || endIdx === undefined) return;
 
-    const s = parseTimestamp(state.timestamps[startIdx]);
     const e = parseTimestamp(state.timestamps[endIdx]);
-    el.textContent = `Window: ${formatDatetimeReadable(s)} \u2192 ${formatDatetimeReadable(e)}`;
+    el.textContent = `24h window ending ${formatDatetimeReadable(e)}`;
 }
 
 function renderDashboard() {
     if (!state.dataLoaded || state.forecastIndex < 0) return;
 
-    state.focusZip = state.selectedZip === 'all' ? getFocusZip() : state.selectedZip;
+    state.focusZip = state.selectedZip;
 
-    document.getElementById('mapBadge').textContent =
-        state.selectedZip === 'all' ? 'ZIP: all' : `ZIP: ${state.selectedZip}`;
+    document.getElementById('mapBadge').textContent = `ZIP: ${state.selectedZip}`;
 
     updateWindowSummary();
     updateCitywideStatus();
@@ -66,7 +63,7 @@ function runForecast() {
         return;
     }
 
-    state.focusZip = state.selectedZip === 'all' ? null : state.selectedZip;
+    state.focusZip = state.selectedZip;
     renderDashboard();
 }
 

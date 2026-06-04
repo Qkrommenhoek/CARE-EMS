@@ -187,12 +187,6 @@ body {
     flex: 1;
     min-width: 0;
 }
-
-.date-sep {
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
 .run-btn {
     width: 100%;
     margin-top: 8px;

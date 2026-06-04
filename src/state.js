@@ -31,7 +31,7 @@ export const state = {
     neighborMap: {},
     activeIndices: [],
     forecastIndex: -1,
-    selectedZip: 'all',
+    selectedZip: null,
     focusZip: null,
     tableSort: { key: 'predicted', asc: false },
     dataLoaded: false
