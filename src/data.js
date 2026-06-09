@@ -3,7 +3,7 @@
  */
 
 import { state, DATA_PATHS } from './state.js';
-import { wktToGeoJSON, geometryCentroid, computeNeighborMap } from './geo.js';
+import { wktToGeoJSON, geometryCentroid } from './geo.js';
 import { clearPercentileCache } from './classify.js';
 import {
     showLoading,
@@ -85,11 +85,19 @@ async function loadNeighborhoods() {
     return response.json();
 }
 
+async function loadZipNeighbors() {
+    const response = await fetch(DATA_PATHS.zipNeighbors);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+}
+
 export async function loadAllData() {
     showLoading('Loading EMS data...');
 
     try {
-        const [predResult, truthResult, geometries, neighborhoods] = await Promise.all([
+        const [predResult, truthResult, geometries, neighborhoods, zipNeighbors] = await Promise.all([
             loadTimeseriesCsv(DATA_PATHS.predictions)
                 .catch(e => { throw new Error(`Could not load predictions.csv — ${e.message}`); }),
             loadTimeseriesCsv(DATA_PATHS.groundTruths)
@@ -97,7 +105,9 @@ export async function loadAllData() {
             loadZipCoordinates()
                 .catch(e => { throw new Error(`Could not load ZIP_Coordinates.csv — ${e.message}`); }),
             loadNeighborhoods()
-                .catch(e => { throw new Error(`Could not load zip_neighborhoods.json — ${e.message}`); })
+                .catch(e => { throw new Error(`Could not load zip_neighborhoods.json — ${e.message}`); }),
+            loadZipNeighbors()
+                .catch(e => { throw new Error(`Could not load zip_neighbors.json — ${e.message}`); })
         ]);
 
         state.timestamps = predResult.timestamps;
@@ -105,6 +115,7 @@ export async function loadAllData() {
         state.groundTruths = truthResult.data;
         state.geometries = geometries;
         state.neighborhoods = neighborhoods;
+        state.neighborMap = zipNeighbors;
         state.zipList = Object.keys(predResult.data).sort();
 
         clearPercentileCache();
@@ -115,7 +126,6 @@ export async function loadAllData() {
             }
         });
 
-        computeNeighborMap();
         populateZipSelect();
         populateHourSelects();
         setDefaultDateRange();

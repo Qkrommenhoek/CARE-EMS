@@ -5,9 +5,9 @@
 import { state } from './state.js';
 import {
     getNeighborhood, temporalContext, formatForecastWindow,
-    getPopulation, statusLabel, statusClass
+    getPopulation, statusLabel, statusClass, parseTimestamp
 } from './utils.js';
-import { classifyDemand, rollingStats } from './classify.js';
+import { classifyDemand, hourlyAvg } from './classify.js';
 
 export function computePredictionViewModel(zip, forecastIndex) {
     const idx = state.activeIndices[forecastIndex];
@@ -15,10 +15,11 @@ export function computePredictionViewModel(zip, forecastIndex) {
 
     const ts = state.timestamps[idx];
     const predicted = state.predictions[zip][idx];
-    const stats = rollingStats(zip, forecastIndex, 24);
-    const status = classifyDemand(predicted, zip);
+    const hour = parseTimestamp(ts)?.getHours() ?? null;
+    const histAvg = hourlyAvg(zip, hour);
+    const status = classifyDemand(predicted, zip, hour);
 
-    const ratio = stats.avg > 0 ? predicted / stats.avg : 1;
+    const ratio = histAvg > 0 ? predicted / histAvg : 1;
     let vsAvg;
     if (ratio < 0.85) vsAvg = 'Below average';
     else if (ratio <= 1.15) vsAvg = 'Similar to average';
@@ -30,7 +31,7 @@ export function computePredictionViewModel(zip, forecastIndex) {
     for (const nzip of neighbors) {
         const npred = state.predictions[nzip]?.[idx];
         if (npred !== undefined) {
-            const nstatus = classifyDemand(npred, nzip);
+            const nstatus = classifyDemand(npred, nzip, hour);
             if (nstatus === 'HIGH' || nstatus === 'MED') {
                 nearbyConcern = `ZIP ${nzip} has elevated demand`;
                 break;
@@ -64,7 +65,7 @@ export function computePredictionViewModel(zip, forecastIndex) {
         riskLabel: statusLabel(status),
         riskClass: statusClass(status),
         neighbors: neighbors.join(', ') || '\u2014',
-        rollingAvg: `${stats.avg.toFixed(1)} calls/hr`,
+        rollingAvg: `${histAvg.toFixed(1)} calls/hr (hist. avg for this hour)`,
         temporalCtx: temporalContext(ts)
     };
 }

@@ -4,7 +4,7 @@
 
 import { state, MAP_CONFIG } from './state.js';
 import { statusColor, classifyDemand } from './classify.js';
-import { statusLabel } from './utils.js';
+import { statusLabel, parseTimestamp } from './utils.js';
 
 let _map = null;
 let _geoLayer = null;
@@ -33,6 +33,8 @@ export function updateMap(onZipClick) {
     const idx = state.activeIndices[state.forecastIndex];
     if (idx === undefined) return;
 
+    const ts = state.timestamps[idx];
+    const hour = parseTimestamp(ts)?.getHours() ?? null;
     const focusZip = state.focusZip;
 
     if (_geoLayer) {
@@ -43,7 +45,7 @@ export function updateMap(onZipClick) {
         .filter(zip => state.geometries[zip])
         .map(zip => {
             const val = state.predictions[zip][idx];
-            const status = classifyDemand(val, zip);
+            const status = classifyDemand(val, zip, hour);
             return {
                 type: 'Feature',
                 properties: {

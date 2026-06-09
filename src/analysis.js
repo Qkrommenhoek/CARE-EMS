@@ -16,7 +16,7 @@
  */
 
 import { state } from './state.js';
-import { parseTimestamp, getPopulation, mean } from './utils.js';
+import { parseTimestamp, getPopulation, getNeighborhood, mean } from './utils.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -628,15 +628,19 @@ function renderPopulationBubble(container) {
         const pop = getPopulation(zip);
         const avgCalls = zipMeanCallsInWindow(zip);
         const avgGT = zipMeanGTInWindow(zip);
-        const sens = Math.min(Math.max(avgCalls, avgGT) / (pop / 1000), 5);
-        return { zip, pop, avgCalls, avgGT, sens };
+        return { zip, pop, avgCalls, avgGT };
     }).filter(d => d.pop > 0);
 
     const H = 302, iH = H - M.top - M.bottom, iW = W - M.left - M.right;
-    const x = d3.scaleLinear().domain([0, (d3.max(bubbles, d => d.pop / 1000) || 1) * 1.15]).range([0, iW]).nice();
+    const xMin = d3.min(bubbles, d => d.pop) || 1;
+    const xMax = d3.max(bubbles, d => d.pop) || 100000;
+    const x = d3.scaleSqrt().domain([xMin * 0.85, xMax * 1.05]).range([0, iW]);
+    const popTicks = [2, 500, 5000, 10000, 20000, 50000, 75000, 100000, 120000]
+        .filter(t => t >= xMin * 0.85 && t <= xMax * 1.05);
+    const formatPopTick = v => (v >= 1000 ? `${v / 1000}k` : String(Math.round(v)));
     const yMax = d3.max(bubbles, d => Math.max(d.avgCalls, d.avgGT)) || 1;
-    const y = d3.scaleLinear().domain([0, yMax * 1.15]).range([iH, 0]).nice();
-    const r = d3.scaleSqrt().domain([0, 5]).range([4, 22]);
+    const yMin = d3.min(bubbles, d => Math.min(d.avgCalls, d.avgGT)) || 0;
+    const y = d3.scaleLinear().domain([Math.max(0, yMin * 0.7), yMax * 1.2]).range([iH, 0]).nice();
 
     const svg = d3.select(sec).append('svg')
         .attr('viewBox', `0 0 ${W} ${H}`)
@@ -646,8 +650,8 @@ function renderPopulationBubble(container) {
     gridLines(g, d3.axisLeft(y).ticks(5), iW);
 
     g.selectAll('.bubble-pred').data(bubbles).join('circle').attr('class', 'bubble-pred')
-        .attr('cx', d => x(d.pop / 1000)).attr('cy', d => y(d.avgCalls))
-        .attr('r', d => r(d.sens))
+        .attr('cx', d => x(d.pop)).attr('cy', d => y(d.avgCalls))
+        .attr('r', 4)
         .attr('fill', 'rgba(30, 58, 95, 0.42)')
         .attr('stroke', DARK_BLUE).attr('stroke-width', 1)
         .on('mouseover', (ev, d) => showTip(ev,
@@ -655,25 +659,21 @@ function renderPopulationBubble(container) {
         .on('mousemove', moveTip).on('mouseleave', hideTip);
 
     g.selectAll('.bubble-gt').data(bubbles).join('circle').attr('class', 'bubble-gt')
-        .attr('cx', d => x(d.pop / 1000)).attr('cy', d => y(d.avgGT))
-        .attr('r', d => r(d.sens))
+        .attr('cx', d => x(d.pop)).attr('cy', d => y(d.avgGT))
+        .attr('r', 4)
         .attr('fill', 'rgba(22, 163, 74, 0.42)')
         .attr('stroke', OBSERVED_GREEN).attr('stroke-width', 1)
         .on('mouseover', (ev, d) => showTip(ev,
             `ZIP ${d.zip} · Pop: ${(d.pop / 1000).toFixed(1)}k<br>Predicted: ${d.avgCalls.toFixed(1)} calls/day<br>Actual: ${d.avgGT.toFixed(1)} calls/day`))
         .on('mousemove', moveTip).on('mouseleave', hideTip);
 
-    g.selectAll('.blabel').data(bubbles).join('text').attr('class', 'blabel')
-        .attr('x', d => x(d.pop / 1000))
-        .attr('y', d => Math.min(y(d.avgCalls), y(d.avgGT)) - r(d.sens) - 4)
-        .attr('text-anchor', 'middle').attr('font-size', '9').attr('fill', '#64748b')
-        .text(d => d.zip);
-
-    g.append('g').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).ticks(6)).call(styleAxis);
+    g.append('g').attr('transform', `translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickValues(popTicks).tickFormat(formatPopTick))
+        .call(styleAxis);
     g.append('g').call(d3.axisLeft(y).ticks(5)).call(styleAxis);
 
     g.append('text').attr('x', iW / 2).attr('y', iH + 38)
-        .attr('text-anchor', 'middle').attr('font-size', '11').attr('fill', '#64748b').text('population (thousands)');
+        .attr('text-anchor', 'middle').attr('font-size', '11').attr('fill', '#64748b').text('population');
     yLabel(g, iH, 'avg daily calls');
     legendBubblePredActual(g, iW);
 }
@@ -686,15 +686,25 @@ function renderNeighborComparison(container) {
     const chartDiv = document.createElement('div');
     sec.appendChild(chartDiv);
 
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'neighbor-search-wrap';
+    const searchInput = document.createElement('input');
+    searchInput.className = 'neighbor-search-input';
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search ZIP or neighborhood\u2026';
+    searchWrap.appendChild(searchInput);
+
     const selectorDiv = document.createElement('div');
     selectorDiv.className = 'zip-selector';
 
     let focalZip = state.zipList[0] || '';
 
-    state.zipList.forEach(zip => {
+    const zipButtons = state.zipList.map(zip => {
         const btn = document.createElement('button');
         btn.className = 'zip-selector-btn' + (zip === focalZip ? ' active' : '');
         btn.textContent = zip;
+        btn.dataset.zip = zip;
+        btn.dataset.neighborhood = getNeighborhood(zip);
         btn.addEventListener('click', () => {
             focalZip = zip;
             selectorDiv.querySelectorAll('.zip-selector-btn').forEach(b => b.classList.remove('active'));
@@ -702,8 +712,32 @@ function renderNeighborComparison(container) {
             drawNeighborBars(chartDiv, focalZip);
         });
         selectorDiv.appendChild(btn);
+        return btn;
     });
 
+    function filterZipButtons(query) {
+        const q = query.trim().toLowerCase();
+        zipButtons.forEach(btn => {
+            const zip = btn.dataset.zip || '';
+            const neighborhood = (btn.dataset.neighborhood || '').toLowerCase();
+            const match = !q || zip.includes(q) || neighborhood.includes(q);
+            btn.style.display = match ? '' : 'none';
+        });
+        return zipButtons.filter(btn => btn.style.display !== 'none');
+    }
+
+    searchInput.addEventListener('input', () => {
+        filterZipButtons(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        const visible = filterZipButtons(searchInput.value);
+        if (visible.length !== 1) return;
+        visible[0].click();
+    });
+
+    sec.appendChild(searchWrap);
     sec.appendChild(selectorDiv);
     drawNeighborBars(chartDiv, focalZip);
 }

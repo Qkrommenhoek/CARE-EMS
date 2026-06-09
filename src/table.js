@@ -3,25 +3,26 @@
  */
 
 import { state } from './state.js';
-import { getNeighborhood, statusLabel, statusClass } from './utils.js';
-import { classifyDemand, rollingStats } from './classify.js';
+import { getNeighborhood, statusLabel, statusClass, parseTimestamp } from './utils.js';
+import { classifyDemand, hourlyAvg } from './classify.js';
 
 export function buildTableRows() {
     const idx = state.activeIndices[state.forecastIndex];
     if (idx === undefined) return [];
 
+    const ts = state.timestamps[idx];
+    const hour = parseTimestamp(ts)?.getHours() ?? null;
+
     return state.zipList.map(zip => {
         const predicted = state.predictions[zip][idx];
-        const relIndex = state.forecastIndex;
-        const stats = rollingStats(zip, relIndex, 24);
-        const status = classifyDemand(predicted, zip);
+        const avg = hourlyAvg(zip, hour);
+        const status = classifyDemand(predicted, zip, hour);
         return {
             zip,
             neighborhood: getNeighborhood(zip),
             predicted,
-            delta: predicted - stats.avg,
-            status,
-            stats
+            delta: predicted - avg,
+            status
         };
     });
 }

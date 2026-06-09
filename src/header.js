@@ -4,18 +4,21 @@
 
 import { state } from './state.js';
 import { classifyDemand } from './classify.js';
-import { statusLabel, statusClass, formatForecastWindow } from './utils.js';
+import { statusLabel, statusClass, formatForecastWindow, parseTimestamp } from './utils.js';
 
 export function computeCitywideStatus(forecastIndex) {
     const idx = state.activeIndices[forecastIndex];
     if (idx === undefined) return null;
+
+    const ts = state.timestamps[idx];
+    const hour = parseTimestamp(ts)?.getHours() ?? null;
 
     let highCount = 0;
     let modCount = 0;
 
     state.zipList.forEach(zip => {
         const predicted = state.predictions[zip][idx];
-        const status = classifyDemand(predicted, zip);
+        const status = classifyDemand(predicted, zip, hour);
         if (status === 'HIGH') highCount++;
         else if (status === 'MED') modCount++;
     });
@@ -26,7 +29,6 @@ export function computeCitywideStatus(forecastIndex) {
     else if (modCount > 0) overall = 'MED';
     else overall = 'NOR';
 
-    const ts = state.timestamps[idx];
     const timeStr = formatForecastWindow(ts);
 
     return { overall, elevated, timeStr };

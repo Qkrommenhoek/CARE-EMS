@@ -77,7 +77,7 @@ export function stdDev(arr) {
 }
 
 export function getPopulation(zip) {
-    return POPULATION_BY_ZIP[zip] || (12000 + (parseInt(zip, 10) % 50) * 420);
+    return POPULATION_BY_ZIP[zip] || 0;
 }
 
 export function getNeighborhood(zip) {

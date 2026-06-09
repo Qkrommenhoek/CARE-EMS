@@ -3,9 +3,26 @@
  */
 
 import { state } from './state.js';
-import { mean, stdDev } from './utils.js';
+import { mean, stdDev, parseTimestamp } from './utils.js';
 
 const _percentileCache = {};
+
+function groundTruthValuesForHour(zip, hour) {
+    const series = state.groundTruths[zip] || [];
+    if (hour === null || hour === undefined) {
+        return series.filter(Number.isFinite);
+    }
+
+    const values = [];
+    for (let i = 0; i < series.length; i++) {
+        const val = series[i];
+        if (!Number.isFinite(val)) continue;
+        const ts = state.timestamps[i];
+        const d = parseTimestamp(ts);
+        if (d && d.getHours() === hour) values.push(val);
+    }
+    return values;
+}
 
 export function rollingStats(zip, endIndex, windowSize = 24) {
     if (endIndex < 0 || endIndex >= state.activeIndices.length) {
@@ -21,22 +38,31 @@ export function rollingStats(zip, endIndex, windowSize = 24) {
     return { avg: mean(values), std: stdDev(values), values };
 }
 
-export function computePercentiles(zip) {
-    if (_percentileCache[zip]) return _percentileCache[zip];
+export function computePercentiles(zip, hour = null) {
+    const cacheKey = hour === null || hour === undefined ? zip : `${zip}_h${hour}`;
+    if (_percentileCache[cacheKey]) return _percentileCache[cacheKey];
 
-    const all = (state.groundTruths[zip] || []).filter(Number.isFinite);
-    if (all.length < 2) return (_percentileCache[zip] = { p60: Infinity, p85: Infinity });
+    const all = groundTruthValuesForHour(zip, hour);
+    if (all.length < 2) return (_percentileCache[cacheKey] = { p60: Infinity, p85: Infinity });
 
     const sorted = [...all].sort((a, b) => a - b);
-    _percentileCache[zip] = {
+    _percentileCache[cacheKey] = {
         p60: sorted[Math.floor(sorted.length * 0.60)] ?? sorted.at(-1),
         p85: sorted[Math.floor(sorted.length * 0.85)] ?? sorted.at(-1)
     };
-    return _percentileCache[zip];
+    return _percentileCache[cacheKey];
 }
 
-export function classifyDemand(predicted, zip) {
-    const { p60, p85 } = computePercentiles(zip);
+export function hourlyAvg(zip, hour) {
+    const hourValues = groundTruthValuesForHour(zip, hour);
+    if (hourValues.length >= 3) return mean(hourValues);
+
+    const allValues = groundTruthValuesForHour(zip, null);
+    return mean(allValues);
+}
+
+export function classifyDemand(predicted, zip, hour = null) {
+    const { p60, p85 } = computePercentiles(zip, hour);
     if (predicted > p85) return 'HIGH';
     if (predicted > p60) return 'MED';
     return 'NOR';

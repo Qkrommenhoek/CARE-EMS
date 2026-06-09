@@ -3,7 +3,7 @@
  */
 
 import { state } from './state.js';
-import { classifyDemand, rollingStats } from './classify.js';
+import { classifyDemand, hourlyAvg } from './classify.js';
 import { mean, parseTimestamp } from './utils.js';
 
 const OBSERVED_COLOR = '#16a34a';
@@ -244,15 +244,17 @@ export function updateChart() {
     const fcVal = state.predictions[zip][fcIdx];
     forecast[forecast.length - 1] = fcVal;
 
-    const status = classifyDemand(fcVal, zip);
+    const fcTs = state.timestamps[fcIdx];
+    const hour = parseTimestamp(fcTs)?.getHours() ?? null;
+    const status = classifyDemand(fcVal, zip, hour);
     const finiteObs = observed.filter(v => v !== null && Number.isFinite(v));
     const last6 = finiteObs.slice(-6);
     const recentAvg = mean(last6);
-    const overallAvg = rollingStats(zip, endRel, 24).avg;
+    const hourAvg = hourlyAvg(zip, hour);
 
     let recentPhrase;
-    if (recentAvg < overallAvg * 0.85) recentPhrase = 'Recent demand is low.';
-    else if (recentAvg > overallAvg * 1.15) recentPhrase = 'Recent demand is elevated.';
+    if (recentAvg < hourAvg * 0.85) recentPhrase = 'Recent demand is low.';
+    else if (recentAvg > hourAvg * 1.15) recentPhrase = 'Recent demand is elevated.';
     else recentPhrase = 'Recent demand is typical.';
 
     const forecastPhrases = {
