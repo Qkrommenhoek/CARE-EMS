@@ -186,6 +186,23 @@ function zipMeanGTInWindow(zip) {
     return vals.length ? mean(vals) : 0;
 }
 
+/** All timestamps in the loaded dataset */
+function allTimestamps() {
+    return state.timestamps.map((ts, i) => ({ ts, i }));
+}
+
+/** Mean predicted calls for a ZIP across the entire dataset */
+function zipMeanCallsAll(zip) {
+    const vals = state.predictions[zip]?.filter(Number.isFinite) ?? [];
+    return vals.length ? mean(vals) : 0;
+}
+
+/** Mean ground-truth calls for a ZIP across the entire dataset */
+function zipMeanGTAll(zip) {
+    const vals = state.groundTruths[zip]?.filter(Number.isFinite) ?? [];
+    return vals.length ? mean(vals) : 0;
+}
+
 function cityMeanForSeries(series, i) {
     const vals = state.zipList.map(z => series[z]?.[i]).filter(Number.isFinite);
     return vals.length ? mean(vals) : null;
@@ -253,7 +270,7 @@ function renderHourOfDay(container) {
 
     const buckets = Array.from({ length: 24 }, () => []);
     const gtBuckets = Array.from({ length: 24 }, () => []);
-    activeTimestamps().forEach(({ ts, i }) => {
+    allTimestamps().forEach(({ ts, i }) => {
         const d = parseTimestamp(ts);
         if (!d) return;
         const h = d.getHours();
@@ -320,7 +337,7 @@ function renderWeekdayWeekend(container) {
     const wdGTBuckets = Array.from({ length: 24 }, () => []);
     const weGTBuckets = Array.from({ length: 24 }, () => []);
 
-    activeTimestamps().forEach(({ ts, i }) => {
+    allTimestamps().forEach(({ ts, i }) => {
         const d = parseTimestamp(ts);
         if (!d) return;
         const dow = d.getDay();
@@ -414,7 +431,7 @@ function renderDayOfWeek(container) {
 
     const buckets = Array.from({ length: 7 }, () => []);
     const gtBuckets = Array.from({ length: 7 }, () => []);
-    activeTimestamps().forEach(({ ts, i }) => {
+    allTimestamps().forEach(({ ts, i }) => {
         const d = parseTimestamp(ts);
         if (!d) return;
         const idx = DOW_IDX[d.getDay()];
@@ -480,7 +497,7 @@ function renderMonthlyTrend(container) {
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthDays = {};
     const gtMonthDays = {};
-    activeTimestamps().forEach(({ ts, i }) => {
+    allTimestamps().forEach(({ ts, i }) => {
         const d = parseTimestamp(ts);
         if (!d) return;
         const m = d.getMonth();
@@ -570,8 +587,8 @@ function renderZipRanking(container) {
     const sorted = state.zipList
         .map(zip => ({
             zip,
-            value: zipMeanCallsInWindow(zip),
-            gt: zipMeanGTInWindow(zip)
+            value: zipMeanCallsAll(zip),
+            gt: zipMeanGTAll(zip)
         }))
         .sort((a, b) => b.value - a.value);
 
@@ -626,8 +643,8 @@ function renderPopulationBubble(container) {
 
     const bubbles = state.zipList.map(zip => {
         const pop = getPopulation(zip);
-        const avgCalls = zipMeanCallsInWindow(zip);
-        const avgGT = zipMeanGTInWindow(zip);
+        const avgCalls = zipMeanCallsAll(zip);
+        const avgGT = zipMeanGTAll(zip);
         return { zip, pop, avgCalls, avgGT };
     }).filter(d => d.pop > 0);
 
@@ -751,8 +768,8 @@ function drawNeighborBars(container, focalZip) {
 
     const data = zips.map(zip => ({
         zip,
-        value: zipMeanCallsInWindow(zip),
-        gt: zipMeanGTInWindow(zip),
+        value: zipMeanCallsAll(zip),
+        gt: zipMeanGTAll(zip),
         focal: zip === focalZip
     }));
 
