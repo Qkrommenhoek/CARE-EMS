@@ -47,13 +47,14 @@ export function populateHourSelects() {
 
 export function setDefaultDateRange() {
     const fcTimestamps = state.forecastTimestamps;
-    const firstTs = parseTimestamp(fcTimestamps[0]);
-    const lastTs = parseTimestamp(fcTimestamps[fcTimestamps.length - 1]);
+    const lastFcTs = parseTimestamp(fcTimestamps[fcTimestamps.length - 1]);
+    const firstTs = parseTimestamp(state.timestamps[0]);
+    const lastTs = parseTimestamp(state.timestamps[state.timestamps.length - 1]);
 
     document.getElementById('forecastDate').min = dateToInputValue(firstTs);
     document.getElementById('forecastDate').max = dateToInputValue(lastTs);
-    document.getElementById('forecastDate').value = dateToInputValue(lastTs);
-    document.getElementById('forecastHour').value = hourToOption(lastTs);
+    document.getElementById('forecastDate').value = dateToInputValue(lastFcTs);
+    document.getElementById('forecastHour').value = hourToOption(lastFcTs);
 }
 
 export function resolveActiveIndices() {

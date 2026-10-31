@@ -3,7 +3,8 @@
  */
 
 export const DATA_PATHS = {
-    forecastApi: 'https://d1503xyjmekqwy.cloudfront.net/forecast?start=2023-03-13T19:00',
+    forecastApi: 'https://d1503xyjmekqwy.cloudfront.net/forecast',
+    initialForecastStart: '20230313_19',
     groundTruths: './Data/ground_truths.csv',
     zipCoordinates: './Data/ZIP_Coordinates.csv',
     neighborhoods: './Data/zip_neighborhoods.json',

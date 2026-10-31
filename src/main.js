@@ -3,8 +3,8 @@
  */
 
 import { state } from './state.js';
-import { loadAllData } from './data.js';
-import { resolveActiveIndices } from './controls.js';
+import { loadAllData, loadForecast } from './data.js';
+import { resolveActiveIndices, showLoading, hideLoading } from './controls.js';
 import { updateCitywideStatus } from './header.js';
 import { updatePredictionCard } from './prediction.js';
 import { initMap, updateMap } from './map.js';
@@ -52,7 +52,7 @@ function renderDashboard() {
 
 // --- Forecast run ---
 
-function runForecast() {
+async function runForecast() {
     if (!state.dataLoaded) return;
 
     state.selectedZip = document.getElementById('zipSelect').value;
@@ -65,10 +65,19 @@ function runForecast() {
 
     const fcTs = state.timestamps[state.activeIndices[state.forecastIndex]];
     if (!state.forecastTimestamps.includes(fcTs)) {
-        const first = state.forecastTimestamps[0];
-        const last = state.forecastTimestamps[state.forecastTimestamps.length - 1];
-        alert(`No forecast for the selected hour. Forecasts are available from ${first} to ${last}.`);
-        return;
+        const button = document.getElementById('runForecast');
+        button.disabled = true;
+        showLoading('Fetching forecast...');
+        try {
+            await loadForecast(fcTs);
+        } catch (err) {
+            console.error(err);
+            alert(`Could not load forecast for the selected hour — ${err.message}`);
+            return;
+        } finally {
+            hideLoading();
+            button.disabled = false;
+        }
     }
 
     state.focusZip = state.selectedZip;

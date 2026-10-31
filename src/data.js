@@ -64,12 +64,26 @@ function apiDatetimeToTimestamp(datetime) {
     return `${date.replace(/-/g, '')}_${time.slice(0, 2)}`;
 }
 
-async function fetchForecastApi(url) {
+function timestampToApiDatetime(ts) {
+    return `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}T${ts.slice(9, 11)}:00`;
+}
+
+async function fetchForecastApi(startTs) {
+    const url = `${DATA_PATHS.forecastApi}?start=${encodeURIComponent(timestampToApiDatetime(startTs))}`;
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.detail || `HTTP ${response.status}`);
     }
     return response.json();
+}
+
+/** Fetch the 24h forecast starting at `startTs` ("YYYYMMDD_HH") and make it the active forecast. */
+export async function loadForecast(startTs) {
+    const forecastJson = await fetchForecastApi(startTs);
+    const predResult = alignForecast(forecastJson, state.timestamps);
+    state.predictions = predResult.data;
+    state.forecastTimestamps = predResult.forecastTimestamps;
 }
 
 /**
@@ -142,7 +156,7 @@ export async function loadAllData() {
 
     try {
         const [forecastJson, truthResult, geometries, neighborhoods, zipNeighbors] = await Promise.all([
-            fetchForecastApi(DATA_PATHS.forecastApi)
+            fetchForecastApi(DATA_PATHS.initialForecastStart)
                 .catch(e => { throw new Error(`Could not load forecast API — ${e.message}`); }),
             loadTimeseriesCsv(DATA_PATHS.groundTruths)
                 .catch(e => { throw new Error(`Could not load ground_truths.csv — ${e.message}`); }),
