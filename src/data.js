@@ -58,6 +58,50 @@ async function loadTimeseriesCsv(url) {
     return { timestamps, data };
 }
 
+// API datetimes are "YYYY-MM-DDTHH:MM"; the rest of the app keys hours as "YYYYMMDD_HH".
+function apiDatetimeToTimestamp(datetime) {
+    const [date, time] = datetime.split('T');
+    return `${date.replace(/-/g, '')}_${time.slice(0, 2)}`;
+}
+
+async function fetchForecastApi(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+}
+
+/**
+ * Align API forecast hours to the ground-truth timeline, rounding to whole calls.
+ * Hours outside the API response are NaN.
+ */
+function alignForecast({ zips, hours }, timestamps) {
+    const zipKeys = zips.map(String);
+    const indexByTs = new Map(timestamps.map((ts, i) => [ts, i]));
+    const data = {};
+    zipKeys.forEach(zip => {
+        data[zip] = new Array(timestamps.length).fill(NaN);
+    });
+
+    const forecastTimestamps = [];
+    hours.forEach(({ datetime, predicted }) => {
+        const ts = apiDatetimeToTimestamp(datetime);
+        const idx = indexByTs.get(ts);
+        if (idx === undefined) return;
+        forecastTimestamps.push(ts);
+        zipKeys.forEach((zip, z) => {
+            data[zip][idx] = Math.round(predicted[z] ?? 0);
+        });
+    });
+
+    if (!forecastTimestamps.length) {
+        throw new Error('Forecast API hours do not overlap ground truth data');
+    }
+
+    return { data, forecastTimestamps };
+}
+
 async function loadZipCoordinates() {
     const response = await fetch(DATA_PATHS.zipCoordinates);
     if (!response.ok) {
@@ -97,9 +141,9 @@ export async function loadAllData() {
     showLoading('Loading EMS data...');
 
     try {
-        const [predResult, truthResult, geometries, neighborhoods, zipNeighbors] = await Promise.all([
-            loadTimeseriesCsv(DATA_PATHS.predictions)
-                .catch(e => { throw new Error(`Could not load predictions.csv — ${e.message}`); }),
+        const [forecastJson, truthResult, geometries, neighborhoods, zipNeighbors] = await Promise.all([
+            fetchForecastApi(DATA_PATHS.forecastApi)
+                .catch(e => { throw new Error(`Could not load forecast API — ${e.message}`); }),
             loadTimeseriesCsv(DATA_PATHS.groundTruths)
                 .catch(e => { throw new Error(`Could not load ground_truths.csv — ${e.message}`); }),
             loadZipCoordinates()
@@ -110,7 +154,10 @@ export async function loadAllData() {
                 .catch(e => { throw new Error(`Could not load zip_neighbors.json — ${e.message}`); })
         ]);
 
-        state.timestamps = predResult.timestamps;
+        const predResult = alignForecast(forecastJson, truthResult.timestamps);
+
+        state.timestamps = truthResult.timestamps;
+        state.forecastTimestamps = predResult.forecastTimestamps;
         state.predictions = predResult.data;
         state.groundTruths = truthResult.data;
         state.geometries = geometries;

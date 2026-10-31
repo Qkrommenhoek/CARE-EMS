@@ -46,8 +46,9 @@ export function populateHourSelects() {
 }
 
 export function setDefaultDateRange() {
-    const firstTs = parseTimestamp(state.timestamps[0]);
-    const lastTs = parseTimestamp(state.timestamps[state.timestamps.length - 1]);
+    const fcTimestamps = state.forecastTimestamps;
+    const firstTs = parseTimestamp(fcTimestamps[0]);
+    const lastTs = parseTimestamp(fcTimestamps[fcTimestamps.length - 1]);
 
     document.getElementById('forecastDate').min = dateToInputValue(firstTs);
     document.getElementById('forecastDate').max = dateToInputValue(lastTs);

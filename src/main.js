@@ -63,6 +63,14 @@ function runForecast() {
         return;
     }
 
+    const fcTs = state.timestamps[state.activeIndices[state.forecastIndex]];
+    if (!state.forecastTimestamps.includes(fcTs)) {
+        const first = state.forecastTimestamps[0];
+        const last = state.forecastTimestamps[state.forecastTimestamps.length - 1];
+        alert(`No forecast for the selected hour. Forecasts are available from ${first} to ${last}.`);
+        return;
+    }
+
     state.focusZip = state.selectedZip;
     renderDashboard();
 }

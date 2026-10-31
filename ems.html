@@ -50,17 +50,17 @@
             </section>
 
             <section class="card analysis-panel">
-                <h2>Analysis</h2>
+                <h2>Demand Analysis</h2>
                 <div class="analysis-tabs">
                     <button class="analysis-tab active" data-open-analysis="temporal">Temporal</button>
                     <button class="analysis-tab" data-open-analysis="spatial">Spatial</button>
                 </div>
                 <div class="analysis-content">
                     <div class="analysis-pane active" id="pane-temporal">
-                        <p>Hour-of-day and day-of-week demand patterns for the selected zone. Full analysis view coming soon.</p>
+                        <p>Explore how EMS calls vary by time, day, and location to understand peak demand periods, daily trends, and high demand areas.</p>
                     </div>
                     <div class="analysis-pane" id="pane-spatial">
-                        <p>Spatial autocorrelation and hotspot clustering across NYC ZIP zones. Full analysis view coming soon.</p>
+                        <p></p>
                     </div>
                 </div>
             </section>
@@ -120,7 +120,7 @@
                         <tr>
                             <th data-sort="zip">ZIP</th>
                             <th data-sort="neighborhood">Neighborhood</th>
-                            <th data-sort="predicted">Expected calls</th>
+                            <th data-sort="predicted">Calls</th>
                             <th data-sort="delta">Deviation</th>
                             <th>Demand bar</th>
                             <th data-sort="status">Status</th>
@@ -158,8 +158,8 @@
         <div class="analysis-modal">
             <div class="analysis-modal-header">
                 <div class="analysis-modal-tabs">
-                    <button class="analysis-modal-tab active" data-tab="temporal">Temporal Analysis</button>
-                    <button class="analysis-modal-tab" data-tab="spatial">Spatial Analysis</button>
+                    <button class="analysis-modal-tab active" data-tab="temporal">Temporal Demand Analysis</button>
+                    <button class="analysis-modal-tab" data-tab="spatial">Spatial Demand Analysis</button>
                 </div>
                 <button class="analysis-modal-close" id="analysisClose">&#215;</button>
             </div>

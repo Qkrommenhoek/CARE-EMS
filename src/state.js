@@ -3,7 +3,7 @@
  */
 
 export const DATA_PATHS = {
-    predictions: './Data/predictions.csv',
+    forecastApi: 'https://d1503xyjmekqwy.cloudfront.net/forecast?start=2023-03-13T19:00',
     groundTruths: './Data/ground_truths.csv',
     zipCoordinates: './Data/ZIP_Coordinates.csv',
     neighborhoods: './Data/zip_neighborhoods.json',
@@ -72,6 +72,7 @@ export const POPULATION_BY_ZIP = {
 
 export const state = {
     timestamps: [],
+    forecastTimestamps: [],
     zipList: [],
     predictions: {},
     groundTruths: {},
