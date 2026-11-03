@@ -45,16 +45,53 @@ export function populateHourSelects() {
     }
 }
 
+// The forecast model needs 24h of observed history before the start hour,
+// and the 24h forecast must overlap ground truth to be displayed.
+const FORECAST_HISTORY_HOURS = 24;
+const FORECAST_HORIZON_HOURS = 24;
+
+function forecastBounds() {
+    const ts = state.timestamps;
+    return {
+        min: parseTimestamp(ts[FORECAST_HISTORY_HOURS]),
+        max: parseTimestamp(ts[ts.length - FORECAST_HORIZON_HOURS])
+    };
+}
+
+/** Clamp the date input to the forecastable range and disable out-of-range hours on boundary dates. */
+export function syncForecastControls() {
+    const dateEl = document.getElementById('forecastDate');
+    const hourEl = document.getElementById('forecastHour');
+    const { min, max } = forecastBounds();
+    const minDate = dateToInputValue(min);
+    const maxDate = dateToInputValue(max);
+
+    if (!dateEl.value || dateEl.value < minDate) dateEl.value = minDate;
+    else if (dateEl.value > maxDate) dateEl.value = maxDate;
+
+    const minHour = dateEl.value === minDate ? min.getHours() : 0;
+    const maxHour = dateEl.value === maxDate ? max.getHours() : 23;
+    Array.from(hourEl.options).forEach(opt => {
+        const h = parseInt(opt.value, 10);
+        opt.disabled = h < minHour || h > maxHour;
+    });
+
+    const hour = parseInt(hourEl.value, 10);
+    const clamped = Math.min(Math.max(Number.isNaN(hour) ? minHour : hour, minHour), maxHour);
+    hourEl.value = String(clamped).padStart(2, '0');
+}
+
 export function setDefaultDateRange() {
     const fcTimestamps = state.forecastTimestamps;
     const lastFcTs = parseTimestamp(fcTimestamps[fcTimestamps.length - 1]);
-    const firstTs = parseTimestamp(state.timestamps[0]);
-    const lastTs = parseTimestamp(state.timestamps[state.timestamps.length - 1]);
+    const { min, max } = forecastBounds();
 
-    document.getElementById('forecastDate').min = dateToInputValue(firstTs);
-    document.getElementById('forecastDate').max = dateToInputValue(lastTs);
-    document.getElementById('forecastDate').value = dateToInputValue(lastFcTs);
+    const dateEl = document.getElementById('forecastDate');
+    dateEl.min = dateToInputValue(min);
+    dateEl.max = dateToInputValue(max);
+    dateEl.value = dateToInputValue(lastFcTs);
     document.getElementById('forecastHour').value = hourToOption(lastFcTs);
+    syncForecastControls();
 }
 
 export function resolveActiveIndices() {

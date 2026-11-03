@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 import { loadAllData, loadForecast } from './data.js';
-import { resolveActiveIndices, showLoading, hideLoading } from './controls.js';
+import { resolveActiveIndices, syncForecastControls, showLoading, hideLoading } from './controls.js';
 import { updateCitywideStatus } from './header.js';
 import { updatePredictionCard } from './prediction.js';
 import { initMap, updateMap } from './map.js';
@@ -56,6 +56,7 @@ async function runForecast() {
     if (!state.dataLoaded) return;
 
     state.selectedZip = document.getElementById('zipSelect').value;
+    syncForecastControls();
     resolveActiveIndices();
 
     if (!state.activeIndices.length) {
@@ -88,6 +89,10 @@ async function runForecast() {
 
 function initEventListeners() {
     document.getElementById('runForecast').addEventListener('click', runForecast);
+
+    document.getElementById('forecastDate').addEventListener('change', () => {
+        if (state.dataLoaded) syncForecastControls();
+    });
 
     document.getElementById('zipSelect').addEventListener('change', (e) => {
         selectZip(e.target.value);
