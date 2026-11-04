@@ -3,7 +3,7 @@
  */
 
 import { state } from './state.js';
-import { loadAllData, loadForecast } from './data.js';
+import { loadAllData, loadForecast, loadCsvPredictions } from './data.js';
 import { resolveActiveIndices, syncForecastControls, showLoading, hideLoading } from './controls.js';
 import { updateCitywideStatus } from './header.js';
 import { updatePredictionCard } from './prediction.js';
@@ -107,5 +107,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTableSort(() => updateTable(selectZip));
     initMap();
     const ok = await loadAllData();
-    if (ok) runForecast();
+    if (!ok) return;
+    runForecast();
+    loadCsvPredictions()
+        .then(invalidateAnalysisCharts)
+        .catch(err => console.warn(`Could not load predictions.csv — analysis charts use forecast API data (${err.message})`));
 });

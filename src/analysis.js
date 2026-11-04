@@ -191,9 +191,14 @@ function allTimestamps() {
     return state.timestamps.map((ts, i) => ({ ts, i }));
 }
 
+/** Full predictions.csv history (indexed like state.timestamps), or the API forecast until it loads */
+function analysisPredictions() {
+    return state.csvPredictions ?? state.predictions;
+}
+
 /** Mean predicted calls for a ZIP across the entire dataset */
 function zipMeanCallsAll(zip) {
-    const vals = state.predictions[zip]?.filter(Number.isFinite) ?? [];
+    const vals = analysisPredictions()[zip]?.filter(Number.isFinite) ?? [];
     return vals.length ? mean(vals) : 0;
 }
 
@@ -274,7 +279,7 @@ function renderHourOfDay(container) {
         const d = parseTimestamp(ts);
         if (!d) return;
         const h = d.getHours();
-        const pred = cityMeanForSeries(state.predictions, i);
+        const pred = cityMeanForSeries(analysisPredictions(), i);
         const gt = cityMeanForSeries(state.groundTruths, i);
         if (pred !== null) buckets[h].push(pred);
         if (gt !== null) gtBuckets[h].push(gt);
@@ -343,7 +348,7 @@ function renderWeekdayWeekend(container) {
         const dow = d.getDay();
         const h = d.getHours();
         const isWeekend = dow === 0 || dow === 6;
-        const pred = cityMeanForSeries(state.predictions, i);
+        const pred = cityMeanForSeries(analysisPredictions(), i);
         const gt = cityMeanForSeries(state.groundTruths, i);
         if (pred !== null) (isWeekend ? weBuckets : wdBuckets)[h].push(pred);
         if (gt !== null) (isWeekend ? weGTBuckets : wdGTBuckets)[h].push(gt);
@@ -429,13 +434,14 @@ function renderDayOfWeek(container) {
     const DOW_IDX = [6, 0, 1, 2, 3, 4, 5];
     const SERIES = ['pred', 'gt'];
 
+    const predictions = analysisPredictions();
     const buckets = Array.from({ length: 7 }, () => []);
     const gtBuckets = Array.from({ length: 7 }, () => []);
     allTimestamps().forEach(({ ts, i }) => {
         const d = parseTimestamp(ts);
         if (!d) return;
         const idx = DOW_IDX[d.getDay()];
-        const predVals = state.zipList.map(z => state.predictions[z]?.[i]).filter(Number.isFinite);
+        const predVals = state.zipList.map(z => predictions[z]?.[i]).filter(Number.isFinite);
         const gtVals = state.zipList.map(z => state.groundTruths[z]?.[i]).filter(Number.isFinite);
         if (predVals.length) buckets[idx].push(predVals.reduce((a, b) => a + b, 0));
         if (gtVals.length) gtBuckets[idx].push(gtVals.reduce((a, b) => a + b, 0));
@@ -495,6 +501,7 @@ function renderMonthlyTrend(container) {
     const sec = chartSection(container, 'Monthly call volume trend');
 
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const predictions = analysisPredictions();
     const monthDays = {};
     const gtMonthDays = {};
     allTimestamps().forEach(({ ts, i }) => {
@@ -503,7 +510,7 @@ function renderMonthlyTrend(container) {
         const m = d.getMonth();
         const key = `${d.getFullYear()}-${m}-${d.getDate()}`;
         const predTotal = state.zipList.reduce((s, z) => {
-            const v = state.predictions[z]?.[i];
+            const v = predictions[z]?.[i];
             return s + (Number.isFinite(v) ? v : 0);
         }, 0);
         const gtTotal = state.zipList.reduce((s, z) => {

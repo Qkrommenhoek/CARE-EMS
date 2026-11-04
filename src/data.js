@@ -116,6 +116,23 @@ function alignForecast({ zips, hours }, timestamps) {
     return { data, forecastTimestamps };
 }
 
+/**
+ * Full-history predictions from predictions.csv, aligned to the ground-truth timeline.
+ * Only the analysis overlay reads `state.csvPredictions`; call after loadAllData().
+ */
+export async function loadCsvPredictions() {
+    const { timestamps, data } = await loadTimeseriesCsv(DATA_PATHS.predictionsCsv);
+    const indexByTs = new Map(timestamps.map((ts, i) => [ts, i]));
+    const aligned = {};
+    Object.entries(data).forEach(([zip, values]) => {
+        aligned[zip] = state.timestamps.map(ts => {
+            const i = indexByTs.get(ts);
+            return i === undefined ? NaN : values[i];
+        });
+    });
+    state.csvPredictions = aligned;
+}
+
 async function loadZipCoordinates() {
     const response = await fetch(DATA_PATHS.zipCoordinates);
     if (!response.ok) {

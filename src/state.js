@@ -6,6 +6,7 @@ export const DATA_PATHS = {
     forecastApi: 'https://d1503xyjmekqwy.cloudfront.net/forecast',
     initialForecastStart: '20230313_19',
     groundTruths: './Data/ground_truths.csv',
+    predictionsCsv: './Data/predictions.csv',
     zipCoordinates: './Data/ZIP_Coordinates.csv',
     neighborhoods: './Data/zip_neighborhoods.json',
     zipNeighbors: './Data/zip_neighbors.json'
@@ -76,6 +77,7 @@ export const state = {
     forecastTimestamps: [],
     zipList: [],
     predictions: {},
+    csvPredictions: null,
     groundTruths: {},
     geometries: {},
     neighborhoods: {},
